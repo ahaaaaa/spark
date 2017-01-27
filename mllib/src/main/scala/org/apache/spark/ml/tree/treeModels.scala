@@ -284,6 +284,7 @@ private[ml] object DecisionTreeModelReadWrite {
    *
    * @param id  Index used for tree reconstruction.  Indices follow a pre-order traversal.
    * @param impurityStats  Stats array.  Impurity type is stored in metadata.
+   * @param rawCount  The unweighted number of samples falling in this node.
    * @param gain  Gain, or arbitrary value if leaf node.
    * @param leftChild  Left child index, or arbitrary value if leaf node.
    * @param rightChild  Right child index, or arbitrary value if leaf node.
@@ -294,6 +295,7 @@ private[ml] object DecisionTreeModelReadWrite {
     prediction: Double,
     impurity: Double,
     impurityStats: Array[Double],
+    rawCount: Long,
     gain: Double,
     leftChild: Int,
     rightChild: Int,
@@ -313,11 +315,12 @@ private[ml] object DecisionTreeModelReadWrite {
         val (leftNodeData, leftIdx) = build(n.leftChild, id + 1)
         val (rightNodeData, rightIdx) = build(n.rightChild, leftIdx + 1)
         val thisNodeData = NodeData(id, n.prediction, n.impurity, n.impurityStats.stats,
-          n.gain, leftNodeData.head.id, rightNodeData.head.id, SplitData(n.split))
+          n.impurityStats.rawCount, n.gain, leftNodeData.head.id, rightNodeData.head.id,
+          SplitData(n.split))
         (thisNodeData +: (leftNodeData ++ rightNodeData), rightIdx)
       case _: LeafNode =>
         (Seq(NodeData(id, node.prediction, node.impurity, node.impurityStats.stats,
-          -1.0, -1, -1, SplitData(-1, Array.empty[Double], -1))),
+          node.impurityStats.rawCount, -1.0, -1, -1, SplitData(-1, Array.empty[Double], -1))),
           id)
       case _ =>
         throw new IllegalArgumentException(s"Unknown node type: ${node.getClass.toString}")
@@ -365,7 +368,8 @@ private[ml] object DecisionTreeModelReadWrite {
     // traversal, this guarantees that child nodes will be built before parent nodes.
     val finalNodes = new Array[Node](nodes.length)
     nodes.reverseIterator.foreach { case n: NodeData =>
-      val impurityStats = ImpurityCalculator.getCalculator(impurityType, n.impurityStats)
+      val impurityStats =
+        ImpurityCalculator.getCalculator(impurityType, n.impurityStats, n.rawCount)
       val node = if (n.leftChild != -1) {
         val leftChild = finalNodes(n.leftChild)
         val rightChild = finalNodes(n.rightChild)
