@@ -94,12 +94,12 @@ class RandomForestSuite extends SparkFunSuite with MLlibTestSparkContext {
   test("find splits for a continuous feature") {
     // find splits for normal case
     {
-      val fakeMetadata = new DecisionTreeMetadata(1, 200000, 0.0, 0, 0,
+      val fakeMetadata = new DecisionTreeMetadata(1, 200000, 200000.0, 0, 0,
         Map(), Set(),
         Array(6), Gini, QuantileStrategy.Sort,
         0, 0, 0.0, 0.0, 0, 0
       )
-      val featureSamples = Array.fill(10000)((1.0, math.random))
+      val featureSamples = Array.fill(10000)((1.0, math.random)).filter(_._2 != 0.0)
       val splits = RandomForest.findSplitsForContinuousFeature(featureSamples, fakeMetadata, 0)
       assert(splits.length === 5)
       assert(fakeMetadata.numSplits(0) === 5)
@@ -110,7 +110,7 @@ class RandomForestSuite extends SparkFunSuite with MLlibTestSparkContext {
 
     // SPARK-16957: Use midpoints for split values.
     {
-      val fakeMetadata = new DecisionTreeMetadata(1, 8, 0.0, 0, 0,
+      val fakeMetadata = new DecisionTreeMetadata(1, 8, 8.0, 0, 0,
         Map(), Set(),
         Array(3), Gini, QuantileStrategy.Sort,
         0, 0, 0.0, 0.0, 0, 0
@@ -138,7 +138,7 @@ class RandomForestSuite extends SparkFunSuite with MLlibTestSparkContext {
     // find splits should not return identical splits
     // when there are not enough split candidates, reduce the number of splits in metadata
     {
-      val fakeMetadata = new DecisionTreeMetadata(1, 12, 0.0, 0, 0,
+      val fakeMetadata = new DecisionTreeMetadata(1, 12, 12.0, 0, 0,
         Map(), Set(),
         Array(5), Gini, QuantileStrategy.Sort,
         0, 0, 0.0, 0.0, 0, 0
@@ -153,7 +153,7 @@ class RandomForestSuite extends SparkFunSuite with MLlibTestSparkContext {
 
     // find splits when most samples close to the minimum
     {
-      val fakeMetadata = new DecisionTreeMetadata(1, 18, 0.0, 0, 0,
+      val fakeMetadata = new DecisionTreeMetadata(1, 18, 18.0, 0, 0,
         Map(), Set(),
         Array(3), Gini, QuantileStrategy.Sort,
         0, 0, 0.0, 0.0, 0, 0
@@ -167,7 +167,7 @@ class RandomForestSuite extends SparkFunSuite with MLlibTestSparkContext {
 
     // find splits when most samples close to the maximum
     {
-      val fakeMetadata = new DecisionTreeMetadata(1, 17, 0.0, 0, 0,
+      val fakeMetadata = new DecisionTreeMetadata(1, 17, 17.0, 0, 0,
         Map(), Set(),
         Array(2), Gini, QuantileStrategy.Sort,
         0, 0, 0.0, 0.0, 0, 0
